@@ -1,34 +1,61 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Python
+# .dockerignore — global, áp dụng cho mọi build context.
+# Mục tiêu: build context nhỏ, không leak secrets, image determinstic.
+# Mỗi Dockerfile (mcp/api/loaders) đã COPY chọn lọc, file này chống nhiễu.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Git
+.git/
+.gitignore
+.gitattributes
+.github/
+.gitlab/
+.gitlab-ci.yml
+
+# CI scripts (chỉ chạy trong runner, không cần trong image)
+ci/
+
+# Docs (không cần runtime)
+docs/
+*.md
+!README.md
+
+# IaC — chạy ngoài image
+infra/ansible/
+infra/inventory/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Components không liên quan đến runtime container
+# ─────────────────────────────────────────────────────────────────────────────
+# Airflow DAGs đóng gói riêng vào worker image (mount từ git sync), không vào MCP/API
+airflow/
+
+# Spark/dbt — chạy trên cluster Spark, không vào MCP/API image
+transforms/
+
+# Tests + fixtures + eval (CI dùng từ checkout, không nướng vào prod image)
+tests/
+eval/
+
+# Notebook
+*.ipynb
+.ipynb_checkpoints/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Python build/cache artifacts
 # ─────────────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-
-# Distribution / packaging
 build/
 dist/
-*.egg
 *.egg-info/
+*.egg
 .eggs/
 wheels/
-pip-wheel-metadata/
-share/python-wheels/
-MANIFEST
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-.pip/
-
-# Virtual environments
-.venv/
-venv/
-env/
-ENV/
-
-# Test / coverage / type-check / lint caches
+# Test / lint / type caches
 .pytest_cache/
 .cache/
 .coverage
@@ -39,18 +66,18 @@ htmlcov/
 .nox/
 .hypothesis/
 .mypy_cache/
-.dmypy.json
-dmypy.json
-.pyre/
-.pytype/
 .ruff_cache/
 .pyright/
+.pip/
 
-# Jupyter
-.ipynb_checkpoints/
+# Virtual envs (không bao giờ COPY vào image)
+.venv/
+venv/
+env/
+ENV/
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Secrets & local config (KHÔNG commit)
+# Secrets — phòng ngừa dù COPY chọn lọc
 # ─────────────────────────────────────────────────────────────────────────────
 .env
 .env.*
@@ -64,66 +91,43 @@ secrets/
 .secrets/
 *.kubeconfig
 .kube/
-
-# Ansible vault + retry
 *.vault
-*.retry
 infra/ansible/.vault-pass*
-infra/ansible/inventory/*.local.ini
 
 # ─────────────────────────────────────────────────────────────────────────────
-# dbt
+# dbt / Airflow / Spark artifacts cục bộ
 # ─────────────────────────────────────────────────────────────────────────────
-transforms/dbt/target/
-transforms/dbt/dbt_packages/
-transforms/dbt/logs/
-transforms/dbt/profiles.yml
 target/
 dbt_packages/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Airflow
-# ─────────────────────────────────────────────────────────────────────────────
-airflow/logs/
-airflow/airflow.db
-airflow/airflow.cfg
-airflow/webserver_config.py
-airflow/standalone_admin_password.txt
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Spark / Hadoop / Hive
-# ─────────────────────────────────────────────────────────────────────────────
+**/target/
+**/dbt_packages/
 spark-warehouse/
 metastore_db/
 derby.log
-*.crc
+airflow/logs/
+airflow/airflow.db
+airflow/airflow.cfg
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Neo4j local data (nếu lỡ chạy ngoài docker volume)
-# ─────────────────────────────────────────────────────────────────────────────
-neo4j-data/
-neo4j-logs/
-neo4j-import/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Local data & generated artifacts
+# Local data
 # ─────────────────────────────────────────────────────────────────────────────
 *.parquet
 *.csv.gz
 *.tar.gz
-/data/
-/tmp/
-/scratch/
-tests/fixtures/seed_*.local.cypher
+*.dump
+*.bak
+neo4j-data/
+neo4j-logs/
+data/
+scratch/
+tmp/
 
+# ─────────────────────────────────────────────────────────────────────────────
 # Logs
+# ─────────────────────────────────────────────────────────────────────────────
 logs/
 *.log
 *.log.*
-
-# Backups & dumps
-*.dump
-*.bak
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Security scan reports
@@ -139,18 +143,9 @@ sbom.xml
 # ─────────────────────────────────────────────────────────────────────────────
 .idea/
 .vscode/
-!.vscode/settings.json.example
-!.vscode/extensions.json
 *.swp
 *.swo
 *~
-.project
-.pydevproject
-.spyderproject
-.spyproject
-.ropeproject
-*.sublime-workspace
-*.sublime-project
 
 # ─────────────────────────────────────────────────────────────────────────────
 # OS
@@ -158,32 +153,22 @@ sbom.xml
 .DS_Store
 .DS_Store?
 ._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 Desktop.ini
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Node / npm (cho mcp-inspector và frontend nội bộ nếu có)
+# Node (nếu có frontend nội bộ build chung)
 # ─────────────────────────────────────────────────────────────────────────────
 node_modules/
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Docker
+# Docker (tránh recursion build context)
 # ─────────────────────────────────────────────────────────────────────────────
+.docker/
 docker-compose.override.yml
 docker-compose.*.local.yml
-.docker/
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Terraform (nếu sau này thêm)
-# ─────────────────────────────────────────────────────────────────────────────
-*.tfstate
-*.tfstate.*
-.terraform/
-.terraform.lock.hcl
+Dockerfile*
+!infra/docker/*/Dockerfile
+.dockerignore
