@@ -23,23 +23,38 @@ Python **3.12** required (xem `pyproject.toml [project] requires-python`).
 
 Khi đổi version: cập nhật cả `pyproject.toml` và file `requirements/*.txt` tương ứng. Ý tưởng dài hạn: dùng `pip-compile` (có sẵn trong `dev.txt`) để sinh `requirements/lock/*.txt` cố định version đầy đủ — bật khi cần reproducible build.
 
-## Pinning style
+## Pinning policy — EXACT version (`==`)
 
-Lower-bound + upper-bound theo major version:
+Tất cả deps đều pin **chính xác** một version cụ thể. Không dùng `>=`, không dùng range, không dùng `~=`.
+
 ```
-neo4j>=5.20,<6.0
+neo4j==5.27.0
 ```
 
 Lý do:
-- Cho phép security patch (5.x) tự nhận.
-- Chặn breaking change ở major (6.0).
-- Khi cần reproducible chính xác, tạo lockfile riêng — không pin cứng trong file primary.
+- **Reproducible build**: image tag và CI run cùng commit luôn cho ra cùng dependency tree.
+- **Air-gap an toàn**: không bị resolver tự kéo phiên bản mới khi mirror nội bộ refresh.
+- **Audit dễ**: SCA scanner (Trivy/Snyk) báo CVE chính xác trên version đang chạy.
+- **Đổi version = MR có review**: bắt buộc qua quy trình kiểm thử regression đầy đủ, không có upgrade ngầm.
 
-## Sinh lockfile (tuỳ chọn)
+Đánh đổi: cần proactive nâng cấp định kỳ (mỗi quý) để không tích nợ CVE — Renovate/Dependabot tự mở MR đề xuất bump, người review chạy CI rồi merge.
+
+## Quy trình nâng cấp 1 dependency
+
+1. Cập nhật cùng lúc cả `requirements/<role>.txt` **và** `pyproject.toml`.
+2. Nếu là transitive dep (vd `cryptography` của `PyJWT[crypto]`) thì cũng phải pin bản tương thích.
+3. Chạy local: `pip install -r requirements/dev.txt && pytest tests/unit -q`.
+4. Push MR → GitLab CI chạy lint + test + scan + build image.
+5. Nếu Trivy/Semgrep báo regression → fix hoặc rollback.
+6. Merge sau khi review.
+
+## Sinh lockfile transitive đầy đủ (tuỳ chọn)
 
 ```bash
 pip install pip-tools
-pip-compile --resolver=backtracking -o requirements/lock/mcp.lock requirements/mcp.txt
+pip-compile --resolver=backtracking --generate-hashes \
+    -o requirements/lock/mcp.lock requirements/mcp.txt
 ```
 
-Lock file được commit ở `requirements/lock/` khi cần determinstic build.
+Lock file ở `requirements/lock/` ghim toàn bộ transitive — bật khi cần
+hash-pinned reproducible build (vd cho image production cuối cùng).

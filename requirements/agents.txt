@@ -4,12 +4,12 @@
 -r base.txt
 
 # HTTP client gọi reranker/LLM endpoint nội bộ.
-httpx>=0.27,<1.0
+httpx==0.28.1
 
 # Cache cho context retrieval (cùng Redis với MCP).
-redis>=5.0,<6.0
+redis==5.2.1
 
 # Embedding — chỉ cài trên image GPU embedding worker, không cài trong MCP runtime.
-# Comment-out mặc định; bật khi build image embedding-worker.
-# sentence-transformers>=3.0,<4.0
-# torch>=2.3,<3.0
+# Bỏ comment khi build image embedding-worker.
+# sentence-transformers==3.3.1
+# torch==2.5.1
