@@ -1,0 +1,113 @@
+# MCP Tool registry — declarative.
+# Tham chiếu: docs/PLAN.md §2.4
+version: 1
+
+tools:
+  - name: search_products
+    version: "1.0.0"
+    description: "Tìm sản phẩm theo tên/mô tả với hỗ trợ ngữ nghĩa"
+    scopes: [merchant.read]
+    handler: mcp.tools.search_products:run
+    input_schema:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string, minLength: 1}
+        merchant_id: {type: string}
+        top_k: {type: integer, default: 10, minimum: 1, maximum: 50}
+
+  - name: get_product
+    version: "1.0.0"
+    description: "Lấy chi tiết sản phẩm + variant + topping liên quan"
+    scopes: [merchant.read]
+    handler: mcp.tools.get_product:run
+    input_schema:
+      type: object
+      required: [product_id]
+      properties:
+        product_id: {type: string}
+
+  - name: find_similar_products
+    version: "1.0.0"
+    description: "Tìm sản phẩm tương tự theo embedding + co-purchase"
+    scopes: [merchant.read]
+    handler: mcp.tools.find_similar_products:run
+    input_schema:
+      type: object
+      required: [product_id]
+      properties:
+        product_id: {type: string}
+        top_k: {type: integer, default: 10, minimum: 1, maximum: 50}
+
+  - name: recommend_toppings
+    version: "1.0.0"
+    description: "Gợi ý topping cho 1 sản phẩm dựa trên hành vi"
+    scopes: [recommendation.read]
+    handler: mcp.tools.recommend_toppings:run
+    input_schema:
+      type: object
+      required: [product_id]
+      properties:
+        product_id: {type: string}
+        customer_id: {type: string}
+        top_k: {type: integer, default: 10, minimum: 1, maximum: 20}
+
+  - name: get_customer_profile
+    version: "1.0.0"
+    description: "Hồ sơ 360 của khách hàng (PII đã hash)"
+    scopes: [customer.read]
+    pii: true
+    handler: mcp.tools.get_customer_profile:run
+    input_schema:
+      type: object
+      required: [customer_id]
+      properties:
+        customer_id: {type: string}
+
+  - name: get_order_history
+    version: "1.0.0"
+    description: "Lịch sử đơn hàng của khách trong khoảng thời gian"
+    scopes: [customer.read]
+    handler: mcp.tools.get_order_history:run
+    input_schema:
+      type: object
+      required: [customer_id]
+      properties:
+        customer_id: {type: string}
+        days: {type: integer, default: 90, minimum: 1, maximum: 365}
+
+  - name: order_analytics
+    version: "1.0.0"
+    description: "Phân tích bán hàng theo merchant"
+    scopes: [analytics.read]
+    handler: mcp.tools.order_analytics:run
+    input_schema:
+      type: object
+      required: [merchant_id, metric]
+      properties:
+        merchant_id: {type: string}
+        date_from: {type: string, format: date}
+        date_to: {type: string, format: date}
+        metric:
+          type: string
+          enum: [revenue, qty, top_products, top_toppings]
+
+  - name: data_discovery
+    version: "1.0.0"
+    description: "Semantic search trên metadata + ontology cho data team"
+    scopes: [data.discover]
+    handler: mcp.tools.data_discovery:run
+    input_schema:
+      type: object
+      required: [query]
+      properties:
+        query: {type: string, minLength: 1}
+
+  - name: get_ontology_schema
+    version: "1.0.0"
+    description: "Trả schema KG để LLM tự suy luận khi cần"
+    scopes: [public]
+    handler: mcp.tools.get_ontology_schema:run
+    input_schema:
+      type: object
+      properties: {}

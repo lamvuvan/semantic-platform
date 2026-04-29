@@ -1,0 +1,44 @@
+# Retrieval policies — mỗi intent một policy.
+# Tham chiếu: docs/PLAN.md §2.3
+
+defaults:
+  max_nodes: 200
+  max_edges: 500
+  context_token_budget: 4000
+  cache_ttl_seconds: 3600
+  rerank_top_k: 20
+
+intents:
+  search_product:
+    channels: [vector, fulltext]
+    vector_top_k: 30
+    fulltext_top_k: 20
+    expand_depth: 0
+
+  customer_360:
+    channels: [graph]
+    expand_depth: 2
+    edge_filters:
+      - "(c:Customer)-[:PLACED]->(o:Order)"
+      - "(o)-[:HAS_LINE]->(:OrderLine)-[:OF_PRODUCT]->(:Product)"
+    time_window_days: 90
+
+  recommend_topping:
+    channels: [graph, vector]
+    expand_depth: 3
+    vector_top_k: 20
+    edge_filters:
+      - "(p:Product)-[:OFFERS_TOPPING]->(:Topping)"
+      - "(p)-[:SIMILAR_TO]->(:Product)"
+
+  aggregate:
+    channels: [graph]
+    expand_depth: 1
+    summarize: true
+    template: "order_analytics_summary"
+
+  data_discovery:
+    channels: [vector, fulltext]
+    vector_top_k: 50
+    fulltext_top_k: 30
+    expand_depth: 0

@@ -1,0 +1,10 @@
+{"id": "q001", "question": "Top 5 topping bán chạy nhất tại merchant M01 trong 7 ngày qua", "tool": "order_analytics", "args": {"merchant_id": "M01", "metric": "top_toppings"}, "expected_contains": ["topping_id"]}
+{"id": "q002", "question": "Khách C123 đã đặt bao nhiêu món matcha 30 ngày qua?", "tool": "get_order_history", "args": {"customer_id": "C123", "days": 30}, "expected_contains": ["orders"]}
+{"id": "q003", "question": "Gợi ý topping cho Trà sữa size M", "tool": "recommend_toppings", "args": {"product_id": "P_TS_M"}, "expected_contains": ["results"]}
+{"id": "q004", "question": "Tìm sản phẩm matcha", "tool": "search_products", "args": {"query": "matcha"}, "expected_contains": ["results"]}
+{"id": "q005", "question": "Sản phẩm tương tự P_TS_M là gì?", "tool": "find_similar_products", "args": {"product_id": "P_TS_M"}, "expected_contains": ["results"]}
+{"id": "q006", "question": "Schema KG có những loại node nào?", "tool": "get_ontology_schema", "args": {}, "expected_contains": ["Merchant", "Product"]}
+{"id": "q007", "question": "Khách C123 thường mua món gì?", "tool": "get_customer_profile", "args": {"customer_id": "C123"}, "expected_contains": ["summary"]}
+{"id": "q008", "question": "Doanh thu merchant M01 tháng này", "tool": "order_analytics", "args": {"merchant_id": "M01", "metric": "revenue"}, "expected_contains": ["rows"]}
+{"id": "q009", "question": "Tìm bảng dữ liệu liên quan tới đơn hàng", "tool": "data_discovery", "args": {"query": "đơn hàng"}, "expected_contains": ["results"]}
+{"id": "q010", "question": "Chi tiết sản phẩm P_TS_M", "tool": "get_product", "args": {"product_id": "P_TS_M"}, "expected_contains": ["product"]}

@@ -1,0 +1,17 @@
+semantic_platform:
+  target: dev
+  outputs:
+    dev:
+      type: spark
+      method: thrift
+      host: spark-thrift.internal
+      port: 10000
+      schema: semantic_platform_dev
+      threads: 4
+    prod:
+      type: spark
+      method: thrift
+      host: spark-thrift.prod.internal
+      port: 10000
+      schema: semantic_platform
+      threads: 8

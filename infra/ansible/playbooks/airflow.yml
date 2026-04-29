@@ -1,0 +1,58 @@
+---
+- name: Apache Airflow 2.9 với CeleryExecutor + Redis broker
+  hosts: airflow_web:airflow_workers
+  become: true
+  vars:
+    airflow_home: /opt/airflow
+    airflow_user: airflow
+  tasks:
+    - name: Install python + venv
+      apt:
+        name: [python3.12, python3.12-venv, python3.12-dev, build-essential, libpq-dev]
+        state: present
+        update_cache: true
+
+    - name: Create airflow user
+      user: { name: "{{ airflow_user }}", system: true, home: "{{ airflow_home }}", shell: /bin/bash }
+
+    - name: Install Airflow + providers vào venv
+      become_user: "{{ airflow_user }}"
+      pip:
+        name:
+          - "apache-airflow==2.9.3"
+          - "apache-airflow-providers-celery"
+          - "apache-airflow-providers-postgres"
+          - "apache-airflow-providers-amazon"
+        virtualenv: "{{ airflow_home }}/venv"
+        virtualenv_command: python3.12 -m venv
+
+    - name: Sync DAG repo
+      git:
+        repo: "{{ git_repo_url }}"
+        dest: "{{ airflow_home }}/repo"
+        version: "main"
+
+    - name: Symlink dags
+      file:
+        src: "{{ airflow_home }}/repo/airflow/dags"
+        dest: "{{ airflow_home }}/dags"
+        state: link
+
+    - name: airflow.cfg
+      template:
+        src: ../templates/airflow.cfg.j2
+        dest: "{{ airflow_home }}/airflow.cfg"
+
+    - name: systemd unit cho webserver/scheduler/worker
+      template:
+        src: "../templates/{{ item }}.service.j2"
+        dest: "/etc/systemd/system/{{ item }}.service"
+      loop:
+        - airflow-webserver
+        - airflow-scheduler
+        - airflow-worker
+      notify: reload systemd
+
+  handlers:
+    - name: reload systemd
+      command: systemctl daemon-reload

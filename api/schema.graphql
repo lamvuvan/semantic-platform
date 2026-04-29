@@ -1,0 +1,74 @@
+"GraphQL schema cho admin/BI nội bộ — chỉ read-only."
+
+type Merchant {
+  merchant_id: ID!
+  name: String!
+  brand: String
+  region: String
+  segment: String
+}
+
+type Category {
+  category_id: ID!
+  name: String!
+  parent_id: String
+}
+
+type Product {
+  product_id: ID!
+  name: String!
+  name_normalized: String
+  description: String
+  base_price: Float
+  status: String
+  variants: [ProductVariant!]!
+  toppings: [Topping!]!
+  category: Category
+  merchant: Merchant
+}
+
+type ProductVariant {
+  variant_id: ID!
+  attributes: String
+  price_delta: Float
+}
+
+type Topping {
+  topping_id: ID!
+  name: String!
+  price: Float
+  category: String
+}
+
+type Customer {
+  customer_id: ID!
+  segment: String
+  loyalty_tier: String
+  region: String
+}
+
+type Order {
+  order_id: ID!
+  ts: String!
+  channel: String
+  payment_method: String
+  total: Float
+  lines: [OrderLine!]!
+}
+
+type OrderLine {
+  line_id: ID!
+  qty: Int
+  unit_price: Float
+  product: Product
+  variant: ProductVariant
+  toppings: [Topping!]!
+}
+
+type Query {
+  product(product_id: ID!): Product
+  searchProducts(query: String!, merchantId: ID, topK: Int = 10): [Product!]!
+  customer(customer_id: ID!): Customer
+  orderHistory(customer_id: ID!, days: Int = 90): [Order!]!
+  topProducts(merchant_id: ID!, dateFrom: String, dateTo: String): [Product!]!
+}

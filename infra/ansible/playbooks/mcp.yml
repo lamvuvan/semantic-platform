@@ -1,0 +1,41 @@
+---
+- name: MCP server — Docker, 2 instance active-active sau Nginx
+  hosts: mcp_servers
+  become: true
+  vars:
+    mcp_image: "{{ registry_internal }}/semantic-platform/mcp:{{ image_tag }}"
+  tasks:
+    - name: Ensure Docker installed
+      apt: { name: docker.io, state: present }
+
+    - name: Login to internal registry
+      docker_login:
+        registry: "{{ registry_internal }}"
+        username: "{{ registry_user }}"
+        password: "{{ registry_password }}"
+
+    - name: Pull MCP image
+      docker_image:
+        name: "{{ mcp_image }}"
+        source: pull
+        force_source: true
+
+    - name: Run MCP container
+      docker_container:
+        name: mcp
+        image: "{{ mcp_image }}"
+        restart_policy: unless-stopped
+        ports:
+          - "8080:8080"
+        env:
+          NEO4J_URI: "{{ neo4j_uri }}"
+          NEO4J_USER: "{{ neo4j_user }}"
+          NEO4J_PASSWORD: "{{ vault_neo4j_password }}"
+          OIDC_JWKS_URL: "{{ oidc_jwks_url }}"
+          OIDC_AUDIENCE: "semantic-platform"
+          MCP_TRANSPORT: http
+          REDIS_URL: "{{ redis_url }}"
+        log_driver: json-file
+        log_options:
+          max-size: "100m"
+          max-file: "5"

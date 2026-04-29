@@ -1,0 +1,39 @@
+---
+- name: Prometheus + Grafana + Loki + node_exporter
+  hosts: monitoring
+  become: true
+  tasks:
+    - name: Install Docker
+      apt: { name: docker.io, state: present }
+
+    - name: Run Prometheus
+      docker_container:
+        name: prometheus
+        image: prom/prometheus:v2.54.0
+        restart_policy: unless-stopped
+        ports: ["9090:9090"]
+        volumes:
+          - /etc/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+          - prom-data:/prometheus
+
+    - name: Run Grafana
+      docker_container:
+        name: grafana
+        image: grafana/grafana:11.1.0
+        restart_policy: unless-stopped
+        ports: ["3000:3000"]
+        env: { GF_SECURITY_ADMIN_PASSWORD: "{{ vault_grafana_admin }}" }
+
+    - name: Run Loki
+      docker_container:
+        name: loki
+        image: grafana/loki:3.1.0
+        restart_policy: unless-stopped
+        ports: ["3100:3100"]
+
+- name: node_exporter on all hosts
+  hosts: all
+  become: true
+  tasks:
+    - name: Install node_exporter
+      apt: { name: prometheus-node-exporter, state: present, update_cache: true }

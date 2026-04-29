@@ -1,0 +1,120 @@
+# GitLab CI/CD pipeline cho semantic-platform.
+# Tham chiếu: docs/PLAN.md §2.2 (CI/CD = GitLab CI + GitLab Runner self-hosted).
+
+stages:
+  - lint
+  - test
+  - scan
+  - build
+  - deploy
+
+variables:
+  PYTHON_IMAGE: python:3.12-slim
+  REGISTRY: $CI_REGISTRY
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip"
+
+cache:
+  paths:
+    - .pip/
+
+lint:
+  stage: lint
+  image: $PYTHON_IMAGE
+  script:
+    - pip install ruff==0.5.5
+    - ruff check .
+
+unit_tests:
+  stage: test
+  image: $PYTHON_IMAGE
+  script:
+    - pip install -e ".[dev]"
+    - pytest tests/unit -q --cov=mcp --cov=agents --cov=loaders --cov-fail-under=70
+
+integration_tests:
+  stage: test
+  image: $PYTHON_IMAGE
+  services:
+    - name: neo4j:5.20-community
+      alias: neo4j
+      variables:
+        NEO4J_AUTH: neo4j/testpw
+        NEO4J_PLUGINS: '["apoc"]'
+  variables:
+    NEO4J_URI: bolt://neo4j:7687
+    NEO4J_USER: neo4j
+    NEO4J_PASSWORD: testpw
+  script:
+    - pip install -e ".[dev]"
+    - pytest tests/integration -q
+
+eval_harness:
+  stage: test
+  image: $PYTHON_IMAGE
+  script:
+    - pip install -e ".[dev]"
+    - python -m eval.run --threshold 0.8
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+semgrep:
+  stage: scan
+  image: returntocorp/semgrep:latest
+  script:
+    - semgrep ci --config=auto
+
+trivy_image:
+  stage: scan
+  image: aquasec/trivy:latest
+  script:
+    - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+
+air_gap_check:
+  stage: scan
+  image: $PYTHON_IMAGE
+  script:
+    - bash ci/scripts/check_no_external_calls.sh
+
+build_mcp:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -f infra/docker/mcp/Dockerfile -t $REGISTRY/$CI_PROJECT_PATH/mcp:$IMAGE_TAG .
+    - docker push $REGISTRY/$CI_PROJECT_PATH/mcp:$IMAGE_TAG
+  only: [main, tags]
+
+build_api:
+  stage: build
+  image: docker:27
+  services: [docker:27-dind]
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -f infra/docker/api/Dockerfile -t $REGISTRY/$CI_PROJECT_PATH/api:$IMAGE_TAG .
+    - docker push $REGISTRY/$CI_PROJECT_PATH/api:$IMAGE_TAG
+  only: [main, tags]
+
+deploy_stg:
+  stage: deploy
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache ansible openssh-client
+  script:
+    - ansible-playbook -i infra/ansible/inventory/stg.ini infra/ansible/playbooks/site.yml
+        --extra-vars "image_tag=$IMAGE_TAG"
+  environment: { name: stg }
+  only: [main]
+
+deploy_prod:
+  stage: deploy
+  image: alpine:3.20
+  before_script:
+    - apk add --no-cache ansible openssh-client
+  script:
+    - ansible-playbook -i infra/ansible/inventory/prod.ini infra/ansible/playbooks/site.yml
+        --extra-vars "image_tag=$IMAGE_TAG"
+  environment: { name: prod }
+  when: manual
+  only: [tags]

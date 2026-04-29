@@ -1,0 +1,39 @@
+---
+- name: Nginx reverse proxy + LB cho MCP/API + keepalived VRRP
+  hosts: nginx_lb
+  become: true
+  tasks:
+    - name: Install nginx, keepalived
+      apt: { name: [nginx, keepalived], state: present, update_cache: true }
+
+    - name: Cấu hình nginx upstream MCP/API
+      template: { src: ../templates/nginx-mcp.conf.j2, dest: /etc/nginx/sites-available/mcp.conf }
+
+    - name: Enable site
+      file:
+        src: /etc/nginx/sites-available/mcp.conf
+        dest: /etc/nginx/sites-enabled/mcp.conf
+        state: link
+      notify: reload nginx
+
+    - name: keepalived.conf
+      template: { src: ../templates/keepalived.conf.j2, dest: /etc/keepalived/keepalived.conf }
+      notify: restart keepalived
+
+    - name: Egress firewall — chặn internet
+      iptables:
+        chain: OUTPUT
+        action: append
+        protocol: tcp
+        destination: "0.0.0.0/0"
+        destination_port: "443"
+        ctstate: NEW
+        jump: DROP
+        comment: "block egress 443 (air-gap)"
+      when: enforce_air_gap | default(true)
+
+  handlers:
+    - name: reload nginx
+      service: { name: nginx, state: reloaded }
+    - name: restart keepalived
+      service: { name: keepalived, state: restarted }
