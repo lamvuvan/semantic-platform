@@ -41,12 +41,17 @@ Tham chiếu thiết kế đầy đủ: [`docs/PLAN.md`](./docs/PLAN.md).
 cd infra/docker && docker compose up -d
 
 # Apply schema
-docker compose exec neo4j cypher-shell -u neo4j -p changeme \
-  -f /opt/ontology/schema.cypher
+docker compose -f infra/docker/docker-compose.yml exec -T neo4j \
+  cypher-shell -u neo4j -p changeme < ontology/schema.cypher
 
-# Seed dataset
-docker compose exec neo4j cypher-shell -u neo4j -p changeme \
-  -f /opt/tests/integration/seed.cypher
+# Seed mock dataset (5 merchants · 50 customers · 200 orders · 90 ngày)
+docker compose -f infra/docker/docker-compose.yml exec -T neo4j \
+  cypher-shell -u neo4j -p changeme < tests/fixtures/seed_full.cypher
+
+# Sinh seed mới với quy mô khác
+python -m tests.fixtures.generate_mock \
+  --merchants 5 --customers 500 --orders 5000 --days 180 \
+  --output tests/fixtures/seed_full.cypher
 
 # Chạy unit tests
 pip install -e ".[dev]"

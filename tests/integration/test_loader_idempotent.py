@@ -1,6 +1,7 @@
 """Smoke test idempotency của loader — yêu cầu Neo4j đang chạy.
 
 Chạy: pytest tests/integration/test_loader_idempotent.py
+Seed Neo4j trước bằng: tests/fixtures/seed_full.cypher
 """
 from __future__ import annotations
 
