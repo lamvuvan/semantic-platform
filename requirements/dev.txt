@@ -1,0 +1,23 @@
+# Dev/CI environment — đầy đủ cho test + lint + chạy tất cả component cục bộ.
+# Dùng: `pip install -r requirements/dev.txt`
+
+-r mcp.txt
+-r api.txt
+-r loaders.txt
+-r agents.txt
+
+# Test
+pytest>=8.0,<9.0
+pytest-cov>=5.0,<7.0
+pytest-asyncio>=0.23,<1.0
+
+# Lint / type
+ruff>=0.5,<1.0
+
+# Security scanners (chạy local trước khi push để khớp GitLab CI stage `scan`)
+bandit>=1.7,<2.0
+semgrep>=1.78,<2.0
+
+# Python project tooling
+build>=1.2,<2.0
+pip-tools>=7.4,<8.0

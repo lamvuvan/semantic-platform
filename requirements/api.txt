@@ -1,0 +1,7 @@
+# Admin/BI internal API runtime deps. Tham chiếu pyproject.toml extras `api`.
+
+-r base.txt
+
+fastapi>=0.111,<1.0
+uvicorn[standard]>=0.30,<1.0
+strawberry-graphql[fastapi]>=0.230,<1.0

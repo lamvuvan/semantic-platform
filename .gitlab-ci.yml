@@ -29,7 +29,7 @@ unit_tests:
   stage: test
   image: $PYTHON_IMAGE
   script:
-    - pip install -e ".[dev]"
+    - pip install -r requirements/dev.txt && pip install --no-deps -e .
     - pytest tests/unit -q --cov=mcp --cov=agents --cov=loaders --cov-fail-under=70
 
 integration_tests:
@@ -46,14 +46,14 @@ integration_tests:
     NEO4J_USER: neo4j
     NEO4J_PASSWORD: testpw
   script:
-    - pip install -e ".[dev]"
+    - pip install -r requirements/dev.txt && pip install --no-deps -e .
     - pytest tests/integration -q
 
 eval_harness:
   stage: test
   image: $PYTHON_IMAGE
   script:
-    - pip install -e ".[dev]"
+    - pip install -r requirements/dev.txt && pip install --no-deps -e .
     - python -m eval.run --threshold 0.8
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"

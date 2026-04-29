@@ -7,12 +7,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+# Install deps trước (layer cache friendly — chỉ rebuild khi requirements đổi).
+COPY requirements/base.txt requirements/mcp.txt requirements/agents.txt ./requirements/
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements/mcp.txt -r requirements/agents.txt
+
 COPY pyproject.toml ./
 COPY mcp ./mcp
 COPY agents ./agents
-
-RUN pip install --upgrade pip && \
-    pip install ".[mcp]"
+RUN pip install --no-cache-dir --no-deps .
 
 # MCP_TRANSPORT=http là alias cho streamable-http (xem mcp/server.py:_resolve_transport).
 # Endpoint Streamable HTTP duy nhất là $MCP_PATH (mặc định /mcp), chỉ chấp nhận POST JSON-RPC.

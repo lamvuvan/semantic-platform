@@ -1,0 +1,17 @@
+# Production all-in-one runtime requirements (Python 3.12).
+#
+# Đây là file mặc định cho công cụ ngoài (Renovate, Dependabot, Trivy, Snyk)
+# vốn quét tại root. Để cài cho từng role hãy dùng các file con cụ thể:
+#
+#   pip install -r requirements/mcp.txt        # MCP server
+#   pip install -r requirements/api.txt        # Admin/BI API
+#   pip install -r requirements/loaders.txt    # KG loaders
+#   pip install -r requirements/agents.txt     # Retrieval/agents
+#   pip install -r requirements/dev.txt        # Full dev/CI environment
+#
+# Để cài bộ runtime đầy đủ (tất cả role, không bao gồm dev tools):
+
+-r requirements/mcp.txt
+-r requirements/api.txt
+-r requirements/loaders.txt
+-r requirements/agents.txt

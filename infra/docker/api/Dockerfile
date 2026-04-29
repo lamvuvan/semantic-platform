@@ -5,12 +5,15 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
+COPY requirements/base.txt requirements/api.txt ./requirements/
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir -r requirements/api.txt
+
 COPY pyproject.toml ./
 COPY api ./api
 COPY mcp ./mcp
 COPY agents ./agents
-
-RUN pip install --upgrade pip && pip install ".[api]"
+RUN pip install --no-cache-dir --no-deps .
 
 EXPOSE 8000
 USER 1000:1000

@@ -1,0 +1,15 @@
+# Core deps dùng chung bởi mọi component (mcp, api, loaders, agents).
+# Yêu cầu Python 3.12 — xem pyproject.toml [project] requires-python.
+#
+# Pinning style: lower-bound + upper-bound theo major version để tránh breaking
+# change, đồng thời cho phép security patch tự nhận. Khi nào cần lockfile
+# determinstic, sinh thêm requirements/lock/*.txt bằng `pip-compile`.
+
+neo4j>=5.20,<6.0
+PyYAML>=6.0,<7.0
+jsonschema>=4.22,<5.0
+PyJWT[crypto]>=2.8,<3.0
+
+# JWT [crypto] kéo theo `cryptography` — pin range để build wheel ổn định
+# trên Python 3.12.
+cryptography>=42.0,<46.0

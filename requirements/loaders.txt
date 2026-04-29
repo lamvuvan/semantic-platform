@@ -1,0 +1,6 @@
+# Loader runtime deps. Tham chiếu pyproject.toml extras `loaders`.
+
+-r base.txt
+
+# S3-compatible object storage client.
+boto3>=1.34,<2.0
