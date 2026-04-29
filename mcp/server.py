@@ -1,4 +1,4 @@
-"""MCP Server entrypoint — FastMCP với stdio + HTTP+SSE.
+"""MCP Server entrypoint — FastMCP với stdio + Streamable HTTP.
 
 Mỗi tool đăng ký từ `mcp/registry/tools.yaml`, được wrap bởi:
 - OIDC verify caller (HTTP transport) hoặc signed token (stdio).
@@ -7,6 +7,10 @@ Mỗi tool đăng ký từ `mcp/registry/tools.yaml`, được wrap bởi:
 - Audit log JSON.
 - Rate limit per-tool/per-tenant qua Redis.
 - Query timeout.
+
+Transport HTTP dùng chuẩn **Streamable HTTP** của MCP (POST /mcp với body
+JSON-RPC, response có thể stream qua SSE trên cùng connection). Đây là
+transport HTTP duy nhất được hỗ trợ — SSE-only legacy đã deprecate.
 """
 from __future__ import annotations
 
@@ -36,7 +40,7 @@ def _get_verifier() -> OidcVerifier:
 
 
 def _resolve_caller(headers: dict[str, str] | None) -> Caller:
-    """Trên transport HTTP+SSE — đọc Authorization Bearer.
+    """Trên transport Streamable HTTP — đọc Authorization Bearer.
 
     Trên stdio: dev mode chấp nhận token từ env $MCP_DEV_TOKEN.
     """
@@ -72,15 +76,41 @@ def register_all() -> None:
     logger.info("registered %s tools: %s", len(_TOOLS), sorted(_TOOLS))
 
 
+_HTTP_TRANSPORT_ALIASES = {"http", "streamable-http", "streamable_http"}
+
+
+def _resolve_transport(env_value: str | None) -> str:
+    """Map MCP_TRANSPORT env → giá trị FastMCP.
+
+    Chấp nhận:
+    - `stdio` (default) → stdio transport.
+    - `http` / `streamable-http` / `streamable_http` → streamable-http (FastMCP).
+
+    Mọi giá trị khác → ValueError. SSE-only không còn được hỗ trợ.
+    """
+    raw = (env_value or "stdio").strip().lower()
+    if raw == "stdio":
+        return "stdio"
+    if raw in _HTTP_TRANSPORT_ALIASES:
+        return "streamable-http"
+    raise ValueError(
+        f"unsupported MCP_TRANSPORT={env_value!r}; "
+        "expected one of: stdio, http, streamable-http"
+    )
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
     register_all()
-    transport = os.environ.get("MCP_TRANSPORT", "stdio")
-    if transport == "http":
+    transport = _resolve_transport(os.environ.get("MCP_TRANSPORT"))
+    if transport == "streamable-http":
         host = os.environ.get("MCP_HOST", "0.0.0.0")
         port = int(os.environ.get("MCP_PORT", "8080"))
-        mcp.run(transport="sse", host=host, port=port)
+        path = os.environ.get("MCP_PATH", "/mcp")
+        logger.info("starting MCP on streamable-http %s:%s%s", host, port, path)
+        mcp.run(transport="streamable-http", host=host, port=port, path=path)
     else:
+        logger.info("starting MCP on stdio")
         mcp.run(transport="stdio")
 
 

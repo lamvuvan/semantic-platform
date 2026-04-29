@@ -10,7 +10,7 @@ Nhiều loại client (Claude Desktop, custom agent, n8n, BI plugin) cần truy 
 
 Mọi client/AI tương tác với KG qua **MCP server + Tool registry**:
 
-- MCP server (`mcp/server.py`, FastMCP) hỗ trợ stdio + HTTP+SSE.
+- MCP server (`mcp/server.py`, FastMCP) hỗ trợ stdio + Streamable HTTP (`POST /mcp`). SSE-only legacy không dùng.
 - Tool registry declarative tại `mcp/registry/tools.yaml`, hot-reload.
 - Mỗi tool: scope check (OIDC), tenant filter từ JWT claim, audit log, rate limit, query timeout.
 - Read-only DB user duy nhất.

@@ -93,7 +93,7 @@ Quyết định đã chốt với người dùng:
 ```
 ┌──────────────────────────────────────────────────────────┐
 │ Client / AI Agents  (Claude Desktop · custom agents · BI) │
-│       ↕ MCP protocol (stdio/HTTP+SSE)                    │
+│       ↕ MCP protocol (stdio / Streamable HTTP POST /mcp)  │
 ├──────────────────────────────────────────────────────────┤
 │ MCP Server + Tool Registry  (FastMCP / Python)           │
 │  • Declarative tools (YAML)  • RBAC per tool             │
@@ -197,7 +197,7 @@ Mục tiêu: nhận một câu hỏi/intent từ MCP tool, trả về một **co
 - Dễ thay backend (Neo4j → Apache AGE) mà client không đổi.
 
 **Kiến trúc MCP server**:
-- Triển khai bằng **FastMCP** (Python) — hỗ trợ stdio cho desktop client và **HTTP+SSE** cho client mạng nội bộ.
+- Triển khai bằng **FastMCP** (Python) — hỗ trợ stdio cho desktop client và **Streamable HTTP** (`POST /mcp` với body JSON-RPC, response có thể stream) cho client mạng nội bộ. SSE-only legacy không dùng.
 - Mỗi tool = 1 hàm Python được wrap bởi metadata trong YAML (tool registry).
 - Mỗi tool gọi xuống Context Retrieval Layer rồi format kết quả MCP-compliant (`content`, `isError`, structured JSON).
 
@@ -308,7 +308,7 @@ semantic-platform/
 │   ├── resolvers/
 │   └── auth/
 ├── mcp/                       # MCP server + Tool registry (cổng client/AI)
-│   ├── server.py              # FastMCP entrypoint (stdio + HTTP+SSE)
+│   ├── server.py              # FastMCP entrypoint (stdio + Streamable HTTP)
 │   ├── registry/tools.yaml
 │   ├── tools/                 # 1 file/tool, dùng Context Retrieval
 │   ├── queries/               # Cypher templates
@@ -349,7 +349,7 @@ semantic-platform/
 | **P4 — Order ingestion** | 6–8 | DAG ingest Order/OrderLine (incremental), reified topping edges, idempotency | Full graph với fact orders |
 | **P5 — Embeddings & derived edges** | 8–9 | Spark embedding job (GPU node), vector index, `SIMILAR_TO`/`FAVORS` | Semantic search hoạt động |
 | **P6 — Context Retrieval Layer** | 9–10 | Entity linker, hybrid retriever, subgraph extractor, reranker, summarizer, Redis cache, policies.yaml | Retrieval lib + benchmark latency p95 < 800ms |
-| **P7 — MCP server & Tool registry** | 10–12 | FastMCP server (stdio+HTTP+SSE), 10 tool MVP, OIDC, RBAC, tenant filter, audit, rate-limit, hot-reload registry | MCP server + tool catalog v1, kết nối Claude Desktop demo |
+| **P7 — MCP server & Tool registry** | 10–12 | FastMCP server (stdio + Streamable HTTP), 10 tool MVP, OIDC, RBAC, tenant filter, audit, rate-limit, hot-reload registry | MCP server + tool catalog v1, kết nối Claude Desktop demo |
 | **P8 — AI agents & eval** | 11–13 | Text-to-Cypher fallback, GraphRAG, recommender (qua MCP tools); eval harness gold set | Eval ≥80% accuracy trên 100 câu hỏi |
 | **P9 — Hardening** | 13–15 | Neo4j single-primary + warm standby + backup/restore drill, load test (k6), pen-test MCP, runbooks, on-call | Prod-readiness checklist pass |
 | **P10 — UAT & Launch** | 15–16 | Pilot với data team + 1 AI agent thật qua MCP, fix, go-live MVP | MVP production-ready |
@@ -391,7 +391,7 @@ Tổng thời gian giãn từ 16 → **16 tuần** (vẫn giữ) bằng cách ch
 6. **Tool RBAC test**: mỗi tool chạy với 3 token (đủ scope, thiếu scope, sai tenant) → kỳ vọng allow/deny đúng.
 7. **AI eval harness** (`eval/`): bộ ~100 cặp NL→answer F&B (vd: "Top 5 topping bán chạy nhất tuần qua tại merchant X"); chạy mỗi MR qua MCP tool; threshold ≥80% exact-match hoặc semantic-match.
 8. **Retrieval benchmark**: bộ 50 query với gold subgraph; đo recall@k, precision, latency p95.
-9. **Load test**: k6 mô phỏng 100 RPS qua MCP HTTP+SSE, p95 < 1.2s end-to-end; Neo4j Community p95 < 250ms.
+9. **Load test**: k6 mô phỏng 100 RPS qua MCP Streamable HTTP `POST /mcp`, p95 < 1.2s end-to-end; Neo4j Community p95 < 250ms.
 10. **End-to-end smoke**: sau mỗi daily batch, agent trả lời đúng 10 canonical questions qua MCP trong staging trước khi promote.
 11. **Air-gap test**: GitLab CI job verify firewall egress rules; chạy `curl` đến internet từ VM MCP/LLM phải fail.
 12. **Disaster drill**: backup-restore Neo4j Community mỗi quý từ snapshot trên S3-compatible; verify data parity với baseline counts.
