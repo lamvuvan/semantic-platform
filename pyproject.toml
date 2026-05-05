@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools==75.6.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "semantic-platform"
+version = "0.2.0"
+description = "F&B Knowledge Graph — AI Agent integration architecture (5-layer)"
+requires-python = ">=3.12"
+dependencies = [
+    "neo4j==5.27.0",
+    "PyYAML==6.0.2",
+    "PyJWT[crypto]==2.10.1",
+    "cryptography==44.0.0",
+    "pydantic==2.10.4",
+]
+
+[project.optional-dependencies]
+domain = [
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "elasticsearch==8.15.1",
+    "qdrant-client==1.12.1",
+    "asyncpg==0.30.0",
+    "httpx==0.28.1",
+    "opentelemetry-api==1.29.0",
+    "opentelemetry-sdk==1.29.0",
+    "opentelemetry-instrumentation-fastapi==0.50b0",
+    "opentelemetry-exporter-otlp-proto-http==1.29.0",
+    "prometheus-client==0.21.1",
+]
+mcp = [
+    "fastmcp==2.10.6",
+    "redis==5.2.1",
+    "httpx==0.28.1",
+    "pydantic==2.10.4",
+]
+dev = [
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.2",
+    "pytest-cov==6.0.0",
+    "ruff==0.8.4",
+    "bandit==1.8.0",
+    "fastapi==0.115.6",
+    "uvicorn[standard]==0.34.0",
+    "elasticsearch==8.15.1",
+    "qdrant-client==1.12.1",
+    "asyncpg==0.30.0",
+    "httpx==0.28.1",
+    "fastmcp==2.10.6",
+    "redis==5.2.1",
+    "opentelemetry-api==1.29.0",
+    "opentelemetry-sdk==1.29.0",
+    "opentelemetry-instrumentation-fastapi==0.50b0",
+    "opentelemetry-exporter-otlp-proto-http==1.29.0",
+    "prometheus-client==0.21.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["domain*", "repository*", "mcp_server*", "tests*"]
+exclude = ["infra*", "docs*", "data*", "requirements*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "C4", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"

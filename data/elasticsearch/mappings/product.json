@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "number_of_shards": 2,
+    "number_of_replicas": 1,
+    "analysis": {
+      "analyzer": {
+        "vi_text": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding"]
+        },
+        "vi_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "product_id":       { "type": "keyword" },
+      "merchant_id":      { "type": "keyword" },
+      "name":             { "type": "text", "analyzer": "vi_text", "search_analyzer": "vi_search", "fields": { "raw": { "type": "keyword" } } },
+      "name_normalized":  { "type": "text", "analyzer": "vi_text" },
+      "description":      { "type": "text", "analyzer": "vi_text" },
+      "category_path":    { "type": "keyword" },
+      "category_id":      { "type": "keyword" },
+      "base_price":       { "type": "double" },
+      "status":           { "type": "keyword" },
+      "tags":             { "type": "keyword" },
+      "aliases":          { "type": "text", "analyzer": "vi_text" },
+      "updated_at":       { "type": "date" }
+    }
+  }
+}

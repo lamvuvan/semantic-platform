@@ -1,0 +1,5 @@
+# Production runtime aggregate cho SCA scanner ở root (Renovate/Dependabot/Trivy).
+# Cài cụ thể từng role bằng requirements/<role>.txt.
+
+-r requirements/domain.txt
+-r requirements/mcp.txt

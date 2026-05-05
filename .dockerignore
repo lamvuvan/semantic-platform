@@ -1,24 +1,30 @@
-# Python
+# Trim build context.
+.git/
+.github/
+.gitlab/
+.gitlab-ci.yml
+.gitignore
+.dockerignore
+
+# Docs / IaC / tests không thuộc runtime
+docs/
+infra/ansible/
+tests/
+*.md
+!README.md
+
+# Python build/cache
 __pycache__/
 *.py[cod]
 *.egg-info/
 build/
 dist/
-
-# Virtual envs
 .venv/
 venv/
-env/
-ENV/
-
-# Test / lint caches
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
-.coverage
-.coverage.*
-htmlcov/
-coverage.xml
+.coverage*
 
 # Secrets
 .env
@@ -27,27 +33,18 @@ coverage.xml
 *.pem
 *.key
 *.crt
-*.p12
-secrets/
 
-# Local data volumes
+# Data volumes
 neo4j-data/
 es-data/
 qdrant-data/
 pg-data/
 redis-data/
-*.parquet
-*.csv.gz
-*.dump
-*.bak
 
-# Editor / IDE
+# IDE / OS
 .idea/
 .vscode/
 .claude/
-*.swp
-
-# OS
 .DS_Store
 Thumbs.db
 
@@ -55,5 +52,5 @@ Thumbs.db
 logs/
 *.log
 
-# Docker
+# Recursion safeguard
 docker-compose.override.yml

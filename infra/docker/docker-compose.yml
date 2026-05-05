@@ -1,0 +1,86 @@
+# 7-service stack: Neo4j + Elasticsearch + Qdrant + Redis + Postgres + Domain + MCP.
+# Phục vụ dev/CI cục bộ. Production deploy bằng Ansible (xem infra/ansible/).
+version: "3.9"
+
+services:
+  neo4j:
+    image: neo4j:5.27-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-changeme}
+      NEO4J_PLUGINS: '["apoc"]'
+      NEO4J_dbms_security_procedures_unrestricted: apoc.*
+    volumes:
+      - neo4j-data:/data
+    ports: ["7474:7474", "7687:7687"]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports: ["9200:9200"]
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.1
+    volumes:
+      - qdrant-data:/qdrant/storage
+    ports: ["6333:6333", "6334:6334"]
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports: ["6379:6379"]
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: aliases
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports: ["5432:5432"]
+
+  domain:
+    build:
+      context: ../..
+      dockerfile: infra/docker/domain/Dockerfile
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      QDRANT_URL: http://qdrant:6333
+      POSTGRES_DSN: postgres://app:${POSTGRES_PASSWORD:-changeme}@postgres:5432/aliases
+      EMBEDDING_URL: http://embedding-svc.internal/embed
+    ports: ["8000:8000"]
+    depends_on: [neo4j, elasticsearch, qdrant, redis, postgres]
+
+  mcp:
+    build:
+      context: ../..
+      dockerfile: infra/docker/mcp/Dockerfile
+    environment:
+      DOMAIN_SERVICE_URL: http://domain:8000
+      MCP_JWKS_URL: ${MCP_JWKS_URL:-http://keycloak:8080/realms/sp/protocol/openid-connect/certs}
+      MCP_AUDIENCE: semantic-platform-mcp
+      REDIS_URL: redis://redis:6379/0
+      MCP_TRANSPORT: http
+      # Dev only — production cần mTLS thật.
+      MCP_MTLS_CERT: /certs/client.crt
+      MCP_MTLS_KEY: /certs/client.key
+    ports: ["8080:8080"]
+    depends_on: [domain, redis]
+
+volumes:
+  neo4j-data:
+  es-data:
+  qdrant-data:
+  redis-data:
+  pg-data:

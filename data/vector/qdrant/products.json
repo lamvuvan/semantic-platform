@@ -1,0 +1,26 @@
+{
+  "collection_name": "products",
+  "description": "Product semantic embeddings — multilingual MiniLM (dim=384, cosine).",
+  "vectors": {
+    "size": 384,
+    "distance": "Cosine"
+  },
+  "hnsw_config": {
+    "m": 16,
+    "ef_construct": 100,
+    "full_scan_threshold": 10000
+  },
+  "optimizers_config": {
+    "indexing_threshold": 20000,
+    "memmap_threshold": 50000
+  },
+  "shard_number": 2,
+  "replication_factor": 2,
+  "on_disk_payload": true,
+  "payload_schema": {
+    "merchant_id": { "type": "keyword", "indexed": true },
+    "product_id":  { "type": "keyword", "indexed": true },
+    "category_id": { "type": "keyword", "indexed": true },
+    "status":      { "type": "keyword", "indexed": true }
+  }
+}

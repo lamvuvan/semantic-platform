@@ -1,0 +1,38 @@
+---
+- name: MCP Tool Server — 2 instance active-active sau Nginx
+  hosts: mcp_servers
+  become: true
+  vars:
+    image: "{{ registry_internal }}/semantic-platform/mcp:{{ image_tag }}"
+  tasks:
+    - name: Ensure Docker installed
+      apt: { name: docker.io, state: present }
+
+    - name: Login internal registry
+      docker_login:
+        registry: "{{ registry_internal }}"
+        username: "{{ registry_user }}"
+        password: "{{ registry_password }}"
+
+    - name: Pull image
+      docker_image: { name: "{{ image }}", source: pull, force_source: true }
+
+    - name: Run MCP container
+      docker_container:
+        name: mcp
+        image: "{{ image }}"
+        restart_policy: unless-stopped
+        ports: ["8080:8080"]
+        env:
+          DOMAIN_SERVICE_URL: "https://domain.internal:8000"
+          DOMAIN_SERVICE_CA: /certs/internal-ca.crt
+          MCP_MTLS_CERT: /certs/mcp-client.crt
+          MCP_MTLS_KEY: /certs/mcp-client.key
+          MCP_JWKS_URL: "{{ keycloak_jwks_url }}"
+          MCP_AUDIENCE: "semantic-platform-mcp"
+          REDIS_URL: "{{ redis_url }}"
+          MCP_TRANSPORT: http
+        volumes:
+          - /etc/ssl/internal:/certs:ro
+        log_driver: json-file
+        log_options: { max-size: "100m", max-file: "5" }

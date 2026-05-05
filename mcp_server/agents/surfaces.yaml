@@ -1,0 +1,64 @@
+# Per-agent tool surface — declarative.
+# Mỗi agent chỉ thấy danh sách tools đúng vai trò + scope của mình.
+# Số lượng ≤10 mỗi agent (quy ước Layer 4).
+
+version: 1
+
+agents:
+  sales-copilot:
+    description: "AI hỗ trợ nhân viên bán hàng tại quầy / call center."
+    scopes_required: [merchant.read, customer.read, recommendation.read]
+    rate_limit_rpm: 120
+    tools:
+      - search_products
+      - get_product
+      - find_similar_products
+      - recommend_toppings
+      - get_customer_profile
+      - get_order_history
+      - submit_alias_feedback
+
+  bi-agent:
+    description: "AI hỗ trợ phân tích vận hành cho chủ chuỗi merchant."
+    scopes_required: [analytics.read, merchant.read]
+    rate_limit_rpm: 60
+    tools:
+      - search_products
+      - order_analytics
+      - get_product
+
+  inventory-agent:
+    description: "AI giám sát tồn kho và gợi ý nhập hàng."
+    scopes_required: [merchant.read, inventory.read]
+    rate_limit_rpm: 60
+    tools:
+      - search_products
+      - get_product
+      - find_similar_products
+
+# Tools chung — implementation tại mcp_server/tools/.
+tools:
+  - name: search_products
+    handler: mcp_server.tools.search_products:run
+    pii: false
+  - name: get_product
+    handler: mcp_server.tools.get_product:run
+    pii: false
+  - name: find_similar_products
+    handler: mcp_server.tools.find_similar_products:run
+    pii: false
+  - name: recommend_toppings
+    handler: mcp_server.tools.recommend_toppings:run
+    pii: false
+  - name: get_customer_profile
+    handler: mcp_server.tools.get_customer_profile:run
+    pii: true
+  - name: get_order_history
+    handler: mcp_server.tools.get_order_history:run
+    pii: true
+  - name: order_analytics
+    handler: mcp_server.tools.order_analytics:run
+    pii: false
+  - name: submit_alias_feedback
+    handler: mcp_server.tools.submit_alias_feedback:run
+    pii: false

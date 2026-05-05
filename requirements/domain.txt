@@ -1,0 +1,16 @@
+# Layer 3 — Domain Service runtime.
+-r base.txt
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+elasticsearch==8.15.1
+qdrant-client==1.12.1
+asyncpg==0.30.0
+httpx==0.28.1
+
+# Observability
+opentelemetry-api==1.29.0
+opentelemetry-sdk==1.29.0
+opentelemetry-instrumentation-fastapi==0.50b0
+opentelemetry-exporter-otlp-proto-http==1.29.0
+prometheus-client==0.21.1

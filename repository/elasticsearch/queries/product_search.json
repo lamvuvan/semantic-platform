@@ -1,0 +1,23 @@
+{
+  "comment": "Lexical product search template — substituted bằng Mustache khi gửi tới ES.",
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "multi_match": {
+            "query": "{{q}}",
+            "fields": ["name^3", "name_normalized^2", "aliases^2", "description"],
+            "type": "best_fields",
+            "fuzziness": "AUTO",
+            "operator": "and"
+          }
+        }
+      ],
+      "filter": [
+        { "term":  { "merchant_id": "{{merchant_id}}" } },
+        { "term":  { "status":      "active" } }
+      ]
+    }
+  },
+  "size": "{{top_k}}"
+}
